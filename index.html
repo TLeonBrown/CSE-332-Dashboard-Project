@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>CSE 332 Lab 5 - Dashboard</title>
+<head>
+  <!-- D3 Functionality -->
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <!-- My Functionality -->
+  <script src="js/dashboardFunctionality.js"></script>
+  <script src="js/bivariateScatterPlotFunctionality.js"></script>
+  <script src="js/parallelCoordinatesDisplayFunctionality.js"></script>
+  <script src="js/10x10CorrelationMatrixFunctionality.js"></script>
+  <script src="js/mdsAttributeDisplayFunctionality.js"></script>
+  <script src="js/mdsDataDisplayFunctionality.js"></script>
+  <!-- Materialize -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link type="text/css" rel="stylesheet" href="css/materialize.min.css"  media="screen,projection"/>
+  <!-- Google's custom fonts -->
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:300,400' rel='stylesheet' type='text/css'>
+  <!-- My CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+
+<body>
+  <svg id="baseSVG" width="1536" height="752"></svg>
+  <!-- Render the interactive bar graph page inside this one. -->
+  <object id='interactiveBarHTML100' type="text/html" data="interactiveBar100.html"></object>
+  <object id='interactiveBarHTMLAll' type="text/html" data="interactiveBarAll.html"></object>
+
+  <label class='attrCheckBox'>
+    <input type="checkbox" id='rank' class="filled-in attr" onClick="addAxis('rank')" />
+    <span>Rank</span>
+  </label>
+  <label class='genreCheckBox' id='actionB'>
+    <input type="checkbox" id='action' class="filled-in genr" onClick="addGenre('action')"/>
+    <span>Action</span>
+  </label>
+  <br><br>
+
+  <label class='attrCheckBox'>
+    <input type="checkbox" id='year' class="filled-in attr" onClick="addAxis('year')"/>
+    <span>Year</span>
+  </label>
+  <label class='genreCheckBox' id='adventureB'>
+    <input type="checkbox" id='adventure' class="filled-in genr" onClick="addGenre('adventure')" />
+    <span>Adventure</span>
+  </label>
+  <br><br>
+
+  <label class='attrCheckBox'>
+    <input type="checkbox" id='runtime' class="filled-in attr" onClick="addAxis('runtime')" />
+    <span>Runtime</span>
+  </label>
+  <label class='genreCheckBox' id='animationB'>
+    <input type="checkbox" id='animation' class="filled-in genr" onClick="addGenre('animation')" />
+    <span>Animation</span>
+  </label>
+  <br><br>
+
+  <label class='attrCheckBox'>
+    <input type="checkbox" id='rating' class="filled-in attr" onClick="addAxis('rating')" />
+    <span>Rating</span>
+  </label>
+  <label class='genreCheckBox' id='biographyB'>
+    <input type="checkbox" id='biography' class="filled-in genr" onClick="addGenre('biography')" />
+    <span>Biography</span>
+  </label>
+  <br><br>
+
+  <label class='attrCheckBox'>
+    <input type="checkbox" id='votes' class="filled-in attr" onClick="addAxis('votes')" />
+    <span>Votes</span>
+  </label>
+  <label class='genreCheckBox' id='comedyB'>
+    <input type="checkbox" id='comedy' class="filled-in genr" onClick="addGenre('comedy')" />
+    <span>Comedy</span>
+  </label>
+  <br><br>
+
+  <label class='attrCheckBox'>
+    <input type="checkbox" id='revenue' class="filled-in attr" onClick="addAxis('revenue')" />
+    <span>Revenue</span>
+  </label>
+  <label class='genreCheckBox' id='crimeB'>
+    <input type="checkbox" id='crime' class="filled-in genr" onClick="addGenre('crime')" />
+    <span>Crime</span>
+  </label>
+  <br><br>
+
+  <label class='attrCheckBox'>
+    <input type="checkbox" id='metascore' class="filled-in attr" onClick="addAxis('metascore')" />
+    <span>Metascore</span>
+  </label>
+  <label class='genreCheckBox' id='dramaB'>
+    <input type="checkbox" id='drama' class="filled-in genr" onClick="addGenre('drama')" />
+    <span>Drama</span>
+  </label>
+  <br><br>
+
+  <label class='genreCheckBox' id='horrorB'>
+    <input type="checkbox" id='horror' class="filled-in genr" onClick="addGenre('horror')" />
+    <span>Horror</span>
+  </label>
+  <br><br>
+
+  <label class='genreCheckBox' id='mysteryB'>
+    <input type="checkbox" id='mystery' class="filled-in genr" onClick="addGenre('mystery')" />
+    <span>Mystery</span>
+  </label>
+  <br><br>
+
+  <label class='genreCheckBox' id='otherB'>
+    <input type="checkbox" id='other' class="filled-in genr" onClick="addGenre('other')" />
+    <span>Other</span>
+  </label>
+  <br><br>
+  <a id='buttonSwitch' class="waves-effect waves-light btn teal" onClick='switchBarGraphs()'><i class='material-icons'></i>Switch</a>
+  <a id='selectAll' class="waves-effect waves-light btn teal" onClick='selectAll()'><i class="material-icons"></i>Select All</a>
+  <a id='deselectAll' class="waves-effect waves-light btn teal" onClick='deselectAll()'><i class="material-icons"></i>Deselect All</a>
+
+  <a id='updateButton1' class="waves-effect waves-light btn teal" onClick="validateScatterplot()"><i class="material-icons"></i>Update</a>
+  <a id='updateButton2' class="waves-effect waves-light btn teal" onClick="updateGraphsGenres()"><i class="material-icons"></i>Update</a>
+
+
+</body>
+
+
+  <script>
+  drawDashboard();
+  draw10x10CorrelationMatrix();
+  drawMDSAttributeDisplay();
+  drawMDSDataDisplay();
+  drawPCDGraph();
+
+  // Reload the graphs with new genre list information.
+  function updateGraphsGenres () {
+    newGenres = [];
+    let genreBoxes = document.getElementsByClassName('genr');
+    for (var i = 0; i < genreBoxes.length; i++) {
+      if (genreBoxes[i].checked) {
+        newGenres.push(genreBoxes[i].id);
+      }
+    }
+    pcdUpdateGenresList(newGenres);
+  }
+  // Select all of the 'Genre' checkboxes.
+  function selectAll () {
+    let genreBoxes = document.getElementsByClassName('genr');
+    for (var i = 0; i < genreBoxes.length; i++) {
+      genreBoxes[i].checked = true;
+    }
+  }
+  // Deselect all of the 'Genre' checkboxes.
+  function deselectAll () {
+    let genreBoxes = document.getElementsByClassName('genr');
+    for (var i = 0; i < genreBoxes.length; i++) {
+      genreBoxes[i].checked = false;
+    }
+  }
+  function switchBarGraphs () {
+    console.log('aa');
+    let hundred = document.getElementById('interactiveBarHTML100');
+    let all = document.getElementById('interactiveBarHTMLAll');
+    if (hundred.style.visibility == 'hidden') {
+      hundred.style.visibility = 'visible';
+      all.style.visibility = 'hidden';
+      document.getElementById('buttonSwitch').className = "waves-effect waves-light btn teal";
+    }
+    else {
+      hundred.style.visibility = 'hidden';
+      all.style.visibility = 'visible';
+      document.getElementById('buttonSwitch').className = "waves-effect waves-light btn orange";
+
+    }
+  }
+  </script>
+
+
+</html>

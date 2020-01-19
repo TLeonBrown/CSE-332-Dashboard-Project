@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+
+  <!-- <script src="d3.v3.js"></script> -->
+  <script src="//d3js.org/d3.v3.min.js"></script>
+
+  <style>
+    body {
+      font-size: 9px;
+      /* font-family: Courier, Helvetica, sans-serif; */
+      font-weight: 400;
+      text-align: center;
+    }
+    .tick  {
+      x: 50px;
+      opacity: 0%;
+    }
+    .y.axis line {
+      fill: none;
+    }
+    .x.axis line {
+      fill: none;
+      stroke: #e0e0e0;
+      shape-rendering: crispEdges;
+    }
+    .axis path {
+      display: none;
+    }
+    .brush .extent {
+      fill-opacity: .125;
+      shape-rendering: crispEdges;
+    }
+    .resize {
+      display: inline !important;
+      fill: #7A7A7A;
+      fill-opacity: 1;
+      stroke: #7A7A7A;
+      stroke-width: 2px;
+    }
+  </style>
+
+</head>
+<body>
+
+  <div id="chart"></div>
+
+  <script>
+  var data = [],
+      svg,
+      defs,
+      gBrush,
+      brush,
+      mainXScale,
+      miniXScale,
+      mainYScale,
+      miniYScale,
+      mainYZoom,
+      mainXAxis,
+      mainYAxis,
+      miniWidth,
+      textScale;
+
+  loadData();
+
+  // Load the data from the CSV and generate values.
+  function loadData () {
+    d3.csv("data/IMDB-Movie-Data.csv", function(error, data) {
+      if (error) {
+        throw error;
+      }
+      // Establish data.
+      var dataTable = {
+        'rank': data.map(function(d) { return parseFloat(d.Rank); }),
+        'year': data.map(function(d) { return parseFloat(d.Year); }),
+        'runtime': data.map(function(d) { return parseFloat(d.Runtime); }),
+        'rating': data.map(function(d) { return parseFloat(d.Rating); }),
+        'votes': data.map(function(d) { return parseFloat(d.Votes); }),
+        'revenue': data.map(function(d) { return parseFloat(d.Revenue); }),
+        'metascore': data.map(function(d) { return parseFloat(d.Metascore); }),
+        'title': data.map(function(d) { return d.Title; }),
+      }
+      let length = dataTable['rank'].length;
+      drawBarGraph(dataTable['title'], dataTable['revenue'], length);
+    });
+  }
+
+  function drawBarGraph(titles, revenues, datasetLength) {
+    // Create data points from the data in the CSV file.
+    for (var i = 0; i < datasetLength; i++) {
+      var dataPoint = {};
+      dataPoint.key = i;
+      dataPoint.title = titles[i];
+      dataPoint.revenue = revenues[i];
+      data.push(dataPoint);
+    }
+    data.sort(function(a,b) {
+      return b.revenue - a.revenue;
+    });
+
+    // Remove all data entries except for the top 100 grossing ones.
+    while (data.length > 100) {
+      data.pop();
+    }
+
+    /////////////////////////////////////////////////////////////
+    ///////////////// Set-up SVG and wrappers ///////////////////
+    /////////////////////////////////////////////////////////////
+
+    //Added only for the mouse wheel
+    var zoomFunction = d3.behavior.zoom()
+        .on("zoom", null);
+
+    var mainMargin = {top: 10, right: -5, bottom: 30, left: 90},
+        mainWidth = 210 - mainMargin.left - mainMargin.right,
+        mainHeight = 660 - mainMargin.top - mainMargin.bottom;
+
+    var miniMargin = {top: 10, right: 10, bottom: 50, left: 10},
+        miniHeight = 680 - miniMargin.top - miniMargin.bottom;
+        miniWidth = 60 - miniMargin.left - miniMargin.right;
+
+    svg = d3.select("#chart").append("svg")
+        .attr("class", "svgWrapper")
+        .attr('width', 300)
+        .attr("height", mainHeight + mainMargin.top + mainMargin.bottom)
+        .call(zoomFunction)
+        .on("wheel.zoom", scroll)
+        .on("mousedown.zoom", null)
+        .on("touchstart.zoom", null)
+        .on("touchmove.zoom", null)
+        .on("touchend.zoom", null);
+
+    var mainGroup = svg.append("g")
+            .attr("class","mainGroupWrapper")
+            .attr("transform","translate(" + mainMargin.left + "," + mainMargin.top + ")")
+            .append("g")
+            .attr("clip-path", "url(#clip)")
+            .style("clip-path", "url(#clip)")
+            .attr("class","mainGroup");
+
+    var miniGroup = svg.append("g")
+            .attr("class","miniGroup")
+            .attr("transform","translate(" + (mainMargin.left + mainWidth + mainMargin.right + miniMargin.left) + "," + miniMargin.top + ")");
+
+    var brushGroup = svg.append("g")
+            .attr("class","brushGroup")
+            .attr("transform","translate(" + (mainMargin.left + mainWidth + mainMargin.right + miniMargin.left) + "," + miniMargin.top + ")");
+
+    /////////////////////////////////////////////////////////////
+    ////////////////////// Initiate scales //////////////////////
+    /////////////////////////////////////////////////////////////
+
+    mainXScale = d3.scale.linear().range([0, mainWidth]);
+    mainYScale = d3.scale.ordinal().rangeBands([0, mainHeight], 0.4, 0);
+
+    miniXScale = d3.scale.linear().range([0, miniWidth]);
+    miniYScale = d3.scale.ordinal().rangeBands([0, miniHeight], 0.4, 0);
+
+    //Based on the idea from: http://stackoverflow.com/questions/21485339/d3-brushing-on-grouped-bar-chart
+    mainYZoom = d3.scale.linear()
+        .range([0, mainHeight])
+        .domain([0, mainHeight]);
+
+    //Create x axis object
+    mainXAxis = d3.svg.axis()
+      .scale(mainXScale)
+      .orient("bottom")
+      .ticks(4)
+      .outerTickSize(0);
+
+    //Add group for the x axis
+    d3.select(".mainGroupWrapper")
+        .append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(" + 0 + "," + (mainHeight + 5) + ")");
+
+    //Create y axis object
+    mainYAxis = d3.svg.axis()
+      .scale(mainYScale)
+      .orient("left")
+      .tickSize(0)
+      .outerTickSize(0);
+
+    //Add group for the y axis
+    mainGroup.append("g")
+        .attr("class", "y axis")
+        .attr("transform", "translate(-5,0)");
+
+    /////////////////////////////////////////////////////////////
+    /////////////////////// Update scales ///////////////////////
+    /////////////////////////////////////////////////////////////
+
+    //Update the scales
+    mainXScale.domain([0, d3.max(data, function(d) { return d.revenue; })]);
+    miniXScale.domain([0, d3.max(data, function(d) { return d.revenue; })]);
+    mainYScale.domain(data.map(function(d) { return d.title; }));
+    miniYScale.domain(data.map(function(d) { return d.title; }));
+
+    //Create the visual part of the y axis
+    d3.select(".mainGroup").select(".y.axis").call(mainYAxis);
+
+    /////////////////////////////////////////////////////////////
+    ///////////////////// Label axis scales /////////////////////
+    /////////////////////////////////////////////////////////////
+
+    textScale = d3.scale.linear()
+      .domain([15,50])
+      .range([12,60])
+      .clamp(true);
+
+    /////////////////////////////////////////////////////////////
+    ///////////////////////// Create brush //////////////////////
+    /////////////////////////////////////////////////////////////
+
+    //What should the first extent of the brush become - a bit arbitrary this
+    var brushExtent = Math.max( 1, Math.min( 20, Math.round(data.length*0.2) ) );
+
+    brush = d3.svg.brush()
+        .y(miniYScale)
+        .extent([miniYScale(data[0].title), miniYScale(data[brushExtent].title)])
+        .on("brush", brushmove)
+
+    //Set up the visual part of the brush
+    gBrush = d3.select(".brushGroup").append("g")
+      .attr("class", "brush")
+      .call(brush);
+
+    gBrush.selectAll(".resize")
+      .append("line")
+      .attr("x2", miniWidth);
+
+    gBrush.selectAll(".resize")
+      .append("path")
+      .attr("d", d3.svg.symbol().type("triangle-up").size(20))
+      .attr("transform", function(d,i) {
+        return i ? "translate(" + (miniWidth/2) + "," + 4 + ") rotate(180)" : "translate(" + (miniWidth/2) + "," + -4 + ") rotate(0)";
+      });
+
+    gBrush.selectAll("rect")
+      .attr("width", miniWidth);
+
+    //On a click recenter the brush window
+    gBrush.select(".background")
+      .on("mousedown.brush", brushcenter)
+      .on("touchstart.brush", brushcenter);
+
+    defs = svg.append("defs")
+
+    //Add the clip path for the main bar chart
+    defs.append("clipPath")
+      .attr("id", "clip")
+      .append("rect")
+    	.attr("x", -mainMargin.left)
+      .attr("width", mainWidth + mainMargin.left)
+      .attr("height", mainHeight);
+
+    /////////////////////////////////////////////////////////////
+    /////////////// Set-up the mini bar chart ///////////////////
+    /////////////////////////////////////////////////////////////
+
+    //The mini brushable bar
+    //DATA JOIN
+    var miniBar = d3.select(".miniGroup").selectAll(".bar")
+      .data(data, function(d) { return d.key; });
+
+    //UDPATE
+    miniBar
+      .attr("width", function(d) { return miniXScale(d.revenue); })
+      .attr("y", function(d,i) { return miniYScale(d.title); })
+      .attr("height", miniYScale.rangeBand());
+
+    //ENTER
+    miniBar.enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", 0)
+      .attr("width", function(d) { return miniXScale(d.revenue); })
+      .attr("y", function(d,i) { return miniYScale(d.title); })
+      .attr("height", miniYScale.rangeBand())
+      .style("fill", "teal");
+
+    //EXIT
+    miniBar.exit()
+      .remove();
+
+    //Start the brush
+    gBrush.call(brush.event);
+}//drawBarGraph
+
+
+
+
+
+  //Function runs on a brush move - to update the big bar chart
+  function update() {
+
+    /////////////////////////////////////////////////////////////
+    ////////// Update the bars of the main bar chart ////////////
+    /////////////////////////////////////////////////////////////
+
+    //DATA JOIN
+    var bar = d3.select(".mainGroup").selectAll(".bar")
+        .data(data, function(d) { return d.key; });
+
+    //UPDATE
+    bar
+      .attr("y", function(d,i) { return mainYScale(d.title); })
+      .attr("height", mainYScale.rangeBand())
+      .attr("x", 0)
+      .transition().duration(50)
+      .attr("width", function(d) { return mainXScale(d.revenue); });
+
+    //ENTER
+    bar.enter().append("rect")
+      .attr("class", "bar")
+      .style("fill", "teal")
+      .attr("y", function(d,i) { return mainYScale(d.title); })
+      .attr("height", mainYScale.rangeBand())
+      .attr("x", 0)
+      .transition().duration(50)
+      .attr("width", function(d) { return mainXScale(d.revenue); });
+
+    //EXIT
+    bar.exit()
+      .remove();
+
+  }//update
+
+  /////////////////////////////////////////////////////////////
+  ////////////////////// Brush functions //////////////////////
+  /////////////////////////////////////////////////////////////
+
+  //First function that runs on a brush move
+  function brushmove() {
+
+    var extent = brush.extent();
+
+    //Which bars are still "selected"
+    var selected = miniYScale.domain()
+      .filter(function(d) { return (extent[0] - miniYScale.rangeBand() + 1e-2 <= miniYScale(d)) && (miniYScale(d) <= extent[1] - 1e-2); });
+    //Update the colors of the mini chart - Make everything outside the brush grey
+    d3.select(".miniGroup").selectAll(".bar")
+      .style("fill", function(d, i) { return selected.indexOf(d.title) > -1 ? "teal" : "#e0e0e0"; });
+
+    //Update the label size
+    d3.selectAll(".y.axis text")
+      .style("font-size", textScale(selected.length));
+
+    /////////////////////////////////////////////////////////////
+    ///////////////////// Update the axes ///////////////////////
+    /////////////////////////////////////////////////////////////
+
+    //Reset the part that is visible on the big chart
+    var originalRange = mainYZoom.range();
+    mainYZoom.domain( extent );
+
+    //Update the domain of the x & y scale of the big bar chart
+    mainYScale.domain(data.map(function(d) { return d.title; }));
+    mainYScale.rangeBands( [ mainYZoom(originalRange[0]), mainYZoom(originalRange[1]) ], 0.4, 0);
+
+    //Update the y axis of the big chart
+    d3.select(".mainGroup")
+      .select(".y.axis")
+      .call(mainYAxis);
+
+    //Find the new max of the bars to update the x scale
+    var newMaxXScale = d3.max(data, function(d) { return selected.indexOf(d.title) > -1 ? d.revenue : 0; });
+    mainXScale.domain([0, newMaxXScale]);
+
+    //Update the x axis of the big chart
+    d3.select(".mainGroupWrapper")
+      .select(".x.axis")
+      .transition().duration(50)
+      .call(mainXAxis);
+
+    //Update the big bar chart
+    update();
+
+  }//brushmove
+
+  /////////////////////////////////////////////////////////////
+  ////////////////////// Click functions //////////////////////
+  /////////////////////////////////////////////////////////////
+
+  //Based on http://bl.ocks.org/mbostock/6498000
+  //What to do when the user clicks on another location along the brushable bar chart
+  function brushcenter() {
+    var target = d3.event.target,
+        extent = brush.extent(),
+        size = extent[1] - extent[0],
+        range = miniYScale.range(),
+        y0 = d3.min(range) + size / 2,
+        y1 = d3.max(range) + miniYScale.rangeBand() - size / 2,
+        center = Math.max( y0, Math.min( y1, d3.mouse(target)[1] ) );
+
+    d3.event.stopPropagation();
+
+    gBrush
+        .call(brush.extent([center - size / 2, center + size / 2]))
+        .call(brush.event);
+
+  }//brushcenter
+
+  /////////////////////////////////////////////////////////////
+  ///////////////////// Scroll functions //////////////////////
+  /////////////////////////////////////////////////////////////
+
+  function scroll() {
+
+    //Mouse scroll on the mini chart
+    var extent = brush.extent(),
+      size = extent[1] - extent[0],
+      range = miniYScale.range(),
+      y0 = d3.min(range),
+      y1 = d3.max(range) + miniYScale.rangeBand(),
+      dy = d3.event.deltaY,
+      topSection;
+
+    if ( extent[0] - dy < y0 ) { topSection = y0; }
+    else if ( extent[1] - dy > y1 ) { topSection = y1 - size; }
+    else { topSection = extent[0] - dy; }
+
+    //Make sure the page doesn't scroll as well
+    d3.event.stopPropagation();
+    d3.event.preventDefault();
+
+    gBrush
+        .call(brush.extent([ topSection, topSection + size ]))
+        .call(brush.event);
+
+  }//scroll
+  </script>
+
+</body>
+</html>

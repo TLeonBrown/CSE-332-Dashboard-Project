@@ -1,0 +1,149 @@
+#baseSVG {
+  background-color: #393966;
+  fill: none;
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  top: 0;
+  pointer-events: all;
+}
+.moduleBorders {
+  fill: #ffffff;
+  stroke: none;
+  stroke-width: 3px;
+}
+.labelText {
+  fill: white;
+  font-weight: bold;
+  font-size: 22px;
+  font-family: Courier, Helvetica, sans-serif;
+}
+.innerText, .innerTextMDS {
+  font-weight: bold;
+  font-family: Courier, Helvetica, sans-serif;
+  fill: black;
+  font-size: 14px;
+}
+.innerTextMDS {
+  font-size: 10px;
+}
+#dashboard {
+  font-size: 28px;
+}
+.attrCheckBox, .genreCheckBox{
+  position: relative;
+  width: 15px;
+  height: 15px;
+  left: 1230px;
+  top: 60px;
+  margin-top: 40px;
+  margin-bottom: 40px;
+  font-family: Courier, Helvetica, sans-serif;
+  font-weight: bold;
+}
+.genreCheckBox {
+  left: -30px;
+  top: 20px;
+  margin-left: -500px;
+  float: right;
+  width: 120px;
+  height: 25px;
+  font-weight: bold;
+}
+#buttonSwitch {
+  position: absolute;
+  left: 15px;
+  top: 670px;
+}
+#updateButton1, #updateButton2, #selectAll, #deselectAll {
+  position: relative;
+  left: 1250px;
+  top: 190px;
+}
+.teal {
+  font-family: Courier, Helvetica, sans-serif;
+  font-weight: bold;
+}
+#selectAll {
+  top: 60px;
+  left: 1390px;
+}
+#deselectAll {
+  top: 110px;
+  left: 1255px;
+}
+#updateButton1 {
+  left: 980px;
+}
+#updateButton2 {
+  left: 1050px;
+}
+span {
+  color: black;
+}
+#actionB {background-color: #e6194b;}
+#adventureB {background-color: #f58231;}
+#animationB {background-color: #ffe119;}
+#biographyB {background-color: #bfef45;}
+#comedyB {background-color: #3cb44b;}
+#crimeB {background-color: #42d4f4;}
+#dramaB {background-color: #4363d8;}
+#horrorB {background-color: #911eb4;}
+#mysteryB {background-color: #f032e6;}
+#otherB {background-color: #a9a9a9;}
+.mdsPoint {
+  fill: teal;
+  pointer-events: all;
+}
+#interactiveBarHTML100, #interactiveBarHTMLAll {
+  position: absolute;
+  width: 320px;
+  height: 700px;
+  left: 10px;
+  top: 30px;
+}
+#interactiveBarHTMLAll {
+  visibility: hidden;
+}
+
+
+
+
+
+/* INTERACTIVE BAR GRAPH CSS */
+
+#explanation {
+  font-size: 12px;
+  max-width: 620px;
+  margin: 0 auto;
+  padding-top: 10px;
+  color: #ababab;
+  font-weight: 300;
+}
+
+.y.axis line {
+  fill: none;
+}
+
+.x.axis line {
+  fill: none;
+  stroke: #e0e0e0;
+  shape-rendering: crispEdges;
+}
+
+.axis path {
+  display: none;
+}
+
+.brush .selection {
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+
+.handle {
+  display: inline !important; /* show when empty */
+  fill: #7A7A7A;
+  fill-opacity: 1;
+  stroke: #7A7A7A;
+  stroke-width: 2px;
+}
